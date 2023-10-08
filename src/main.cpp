@@ -3,9 +3,9 @@
 #include <FastLED_NeoMatrix.h>
 
 // define the matrix PIN, width and height
-#define DATA_PIN 4 // 连接到DIN引脚
-#define MATRIX_WIDTH 32
-#define MATRIX_HEIGHT 8
+#define DATA_PIN 4  //led matrix data pin
+#define MATRIX_WIDTH 32 //led matrix width
+#define MATRIX_HEIGHT 8 //led matrix height
 
 // define the button PIN
 #define START_BUTTON 12   // start button
@@ -17,42 +17,43 @@
 CRGB leds[MATRIX_WIDTH * MATRIX_HEIGHT];
 FastLED_NeoMatrix *matrix;
 
-bool settingModel; // 设置模式
+bool settingModel; //to check if the timer is in setting model
 bool buzzerOn;
 
-int timerDuration; // 用于存储计时器持续时间
-int timerMin;
-int timerSec;
+int timerDuration; //to store the timer duration in seconds
+//only used for printing the timer in "00:00" format
+int timerMin; //to store the timer in minutes 
+int timerSec; //to store the timer in seconds
 
-int pressedTimes; // 用于存储按钮按下次数
+int pressedTimes; //to store how many times the timer button is pressed
 
-char timeText[6]; // 用于存储格式化后的时间文本
+char timeText[6]; //to store the timer in "00:00" format
 
 void setTimer(int times)
 {
-  timerDuration = times * 10;
-  timerMin = timerDuration / 60;
-  timerSec = timerDuration % 60;
+  timerDuration = times * 10; //each press will add 10 seconds to the timer
+  timerMin = timerDuration / 60;  // get the minutes by dividing the duration by 60
+  timerSec = timerDuration % 60;  // get the seconds by getting the remainder of the duration divided by 60
 }
 
 void UpdateTimer()
 {
   // logic for the timer
-  if (timerDuration > 0)
+  if (timerDuration > 0)  //when the timer is not time up
   {
-    timerDuration--;
+    timerDuration--;  
     timerSec--;
     if (timerSec < 0)
     {
-      timerSec = 59;
+      timerSec = 59;  //when the seconds is less than 0 and the timer is not time up
       if (timerMin > 0)
       {
         timerMin--;
       }
     }
   }
-  else
-  {
+  else  //when the timer is time up
+  { // reset the timer
     timerDuration = 0;
     timerMin = 0;
     timerSec = 0;
@@ -60,11 +61,10 @@ void UpdateTimer()
 }
 
 void printTimer()
-{
-  // 使用 snprintf 函数将分钟和秒格式化为 "00:00" 形式.
-  snprintf(timeText, sizeof(timeText), "%02d:%02d", timerMin, timerSec);
-  matrix->clear();                // 清除屏幕
-  matrix->setCursor(2, 0);        // 设置光标位置
+{  // print the timer in "00:00" format
+  snprintf(timeText, sizeof(timeText), "%02d:%02d", timerMin, timerSec);  //update the timeText
+  matrix->clear();                
+  matrix->setCursor(2, 0);  //adjust the position on the matrix
   matrix->print(timeText);
   matrix->show();
 }
@@ -72,7 +72,7 @@ void printTimer()
 void startTimer() // call setTimer() before calling this function
 {
   UpdateTimer();
-  matrix->setTextColor(CRGB::Blue); // 设置字体颜色为蓝色
+  matrix->setTextColor(CRGB::Blue); //blue while the timer is counting down
   printTimer();
   delay(1000);
   matrix->clear();
@@ -81,44 +81,40 @@ void startTimer() // call setTimer() before calling this function
 void printText(String text, int speed)
 {
   int textLength = text.length();
-  int displayWidth = MATRIX_WIDTH; // 显示窗口的宽度等于点阵屏的宽度
-  int xPos = displayWidth;         // 初始 x 坐标在显示窗口的右边界
+  int displayWidth = MATRIX_WIDTH;
+  int xPos = displayWidth; 
 
-  while (xPos >= -textLength * 6)
-  {                  // 循环直到文本完全移出显示窗口
-    matrix->clear(); // 清除屏幕
-
-    // 使用 setCursor 设置文本的位置，y 坐标可以根据需要调整
+  while (xPos >= -textLength * 6) //6 is the width of each character
+  {
+    matrix->clear();
     matrix->setCursor(xPos, 0);
-
-    // 使用 print 函数将文本显示在屏幕上
     matrix->print(text);
+    matrix->show();
+    delay(speed); //control the speed of the text scrolling
 
-    matrix->show(); // 刷新屏幕
-
-    delay(speed); // 控制滚动速度
-
-    xPos--; // 减小 x 坐标，实现滚动效果
+    xPos--; //move the text to the left
   }
 }
 
 void setup()
 {
-  FastLED.addLeds<WS2812, DATA_PIN, RGB>(leds, MATRIX_WIDTH * MATRIX_HEIGHT);
+  //initialise the matrix
+  FastLED.addLeds<WS2812, DATA_PIN, RGB>(leds, MATRIX_WIDTH * MATRIX_HEIGHT); //initialise the leds
 
   matrix = new FastLED_NeoMatrix(leds, MATRIX_WIDTH, MATRIX_HEIGHT,
                                  NEO_MATRIX_TOP + NEO_MATRIX_LEFT +
-                                     NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG);
+                                     NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG); //initialise the matrix
 
   matrix->begin();
-  matrix->setTextWrap(false);
-  matrix->setBrightness(5); // 设置亮度（可以根据需要调整）
-  matrix->clear();          // 清除屏幕
-  matrix->setCursor(1, 0);  // 设置光标位置
+  matrix->setTextWrap(false); 
+  matrix->setBrightness(5);
+  matrix->clear();
+  matrix->setCursor(1, 0);
   matrix->print("TIMER");
-  matrix->show(); // 显示屏幕
+  matrix->show();
 
-  timerDuration = 0; // 设置计时器持续时间
+  //initialise the timer
+  timerDuration = 0; 
   timerMin = 0;
   timerSec = 0;
   timeText[0] = '0';
@@ -132,6 +128,7 @@ void setup()
   settingModel = true;
   buzzerOn = true;
 
+  //initialise the buttons
   pinMode(START_BUTTON, INPUT_PULLUP);
   pinMode(SETTING_BUTTON, INPUT_PULLUP);
   pinMode(TIMER_PLUS, INPUT_PULLUP);
@@ -145,79 +142,80 @@ void setup()
 void loop()
 {
 
-  if (settingModel) // 如果在设置模式中
-  {
-    if (digitalRead(TIMER_PLUS) == LOW) // 检测加号按钮
+  if (settingModel) 
+  {   //setting model
+    if (digitalRead(TIMER_PLUS) == LOW) //detect the timer plus button
     {
       pressedTimes++;
-      delay(200);
+      delay(200); //delay to avoid the button been pressed multiple times
     }
-    if (digitalRead(TIMER_MINUS) == LOW) // 检测减号按钮
+    if (digitalRead(TIMER_MINUS) == LOW) //detect the timer minus button
     {
-      if (pressedTimes > 0)
+      if (pressedTimes > 0) //the timer cannot be less than 0
       {
         pressedTimes--;
       }
       delay(200);
     }
-    if (digitalRead(START_BUTTON) == LOW) // 检测开始按钮
+    if (digitalRead(START_BUTTON) == LOW) //detect the start button
     {
-      settingModel = false; // 退出设置模式
+      settingModel = false; //exit the setting model
       delay(200);
     }
     setTimer(pressedTimes);
-    matrix->setTextColor(CRGB::LightPink); // 设置字体颜色为红色
+    matrix->setTextColor(CRGB::LightPink); //pink in the setting model
     printTimer();  
   }
-  else // 如果不在设置模式中
+  else //counting down model
   {
 
     if (timerDuration <= 0)
-    { // 如果时间到了
+    { //timer time up
 
-      if (buzzerOn)
+      if (buzzerOn) //buzzer on when the timer is time up
       {
         tone(BUZZER, 1000);
-        buzzerOn = false;
+        buzzerOn = false; //change the buzzer status to off, incase the buzzer been turned on again by next loop
       }
     
-      // 检测任意按钮按下，关闭buzzer
-      // digitalRead(SETTING_BUTTON) == LOW ||
+      //turn off the buzzer when any button but the setting button is pressed
+      // digitalRead(SETTING_BUTTON) == LOW || 
       if (digitalRead(TIMER_PLUS) == LOW ||
           digitalRead(TIMER_MINUS) == LOW ||
           digitalRead(START_BUTTON) == LOW)
       {
-        // 关闭buzzer
+        
         noTone(BUZZER);
         buzzerOn = false;
-        delay(200);
+        delay(200); //delay to avoid the button been pressed multiple times
       }
 
       // printText("TIME UP", 100); // 显示 TIME UP
-      matrix->clear();                // 清除屏幕
-      matrix->setTextSize(1);         // 设置字体大小
-      matrix->setTextColor(CRGB::Green); // 设置字体颜色为绿色
-      matrix->setCursor(0, 0);        // 设置光标位置
+      matrix->clear();
+      matrix->setTextSize(1);
+      matrix->setTextColor(CRGB::Green);  //green when the timer is time up
+      matrix->setCursor(0, 0);
       matrix->print("READY");
       matrix->show();
       delay(500);
-      matrix->clear();          // 清除屏幕
-      matrix->setCursor(12, 0); // 设置光标位置
+      matrix->clear();
+      matrix->setCursor(12, 0);
       matrix->print("UP");
       matrix->show();
       delay(500);
     }
     else
-    { // 如果时间没到
+    { 
       startTimer();
     }
 
-    // 检测是否按下设置按钮
+      //detect the setting button to enter the setting model
     if (digitalRead(SETTING_BUTTON) == LOW)
     {
+      //reset the buzzer status to on and the pressedTimes to 0
       settingModel = true;
-      pressedTimes = 0;
       buzzerOn = true;
+      pressedTimes = 0;
       delay(200);
     }
   }
